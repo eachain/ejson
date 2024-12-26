@@ -20,11 +20,14 @@ func parseSmartKey(keys string) ([]entryFunc, error) {
 		l := strings.IndexByte(part, '[')
 		r := strings.IndexByte(part, ']')
 		if l < 0 {
-			if r > 0 {
+			if r >= 0 {
 				return nil, invalidFormat(i, part)
 			}
 
 			entries = append(entries, func(j *JSON) *JSON {
+				if j.IsStr() && j.StrIsJSON() {
+					j = j.StrJSON()
+				}
 				if j.IsArray() {
 					if idx, err := strconv.Atoi(part); err == nil {
 						return j.ArrayIndex(idx)
@@ -39,16 +42,19 @@ func parseSmartKey(keys string) ([]entryFunc, error) {
 			if i > 0 { // "[0]"
 				return nil, invalidFormat(i, part)
 			}
-			if r < 0 {
+			if r <= 0 {
 				return nil, invalidFormat(i, part)
 			}
 		}
 		if l > 0 {
-			if (r < 0) || (r > 0 && r < l) {
+			if (r < 0) || (r > 0 && r <= l) {
 				return nil, invalidFormat(i, part)
 			}
 
 			entries = append(entries, func(j *JSON) *JSON {
+				if j.IsStr() && j.StrIsJSON() {
+					j = j.StrJSON()
+				}
 				if j.IsArray() {
 					if idx, err := strconv.Atoi(part[:l]); err == nil {
 						return j.ArrayIndex(idx)
@@ -73,6 +79,9 @@ func parseSmartKey(keys string) ([]entryFunc, error) {
 					i, part)
 			}
 			entries = append(entries, func(j *JSON) *JSON {
+				if j.IsStr() && j.StrIsJSON() {
+					j = j.StrJSON()
+				}
 				return j.ArrayIndex(idx)
 			})
 

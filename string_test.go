@@ -13,3 +13,24 @@ func TestStr(t *testing.T) {
 		t.Fatalf("str returns: %q", s)
 	}
 }
+
+func TestEscapeHTML(t *testing.T) {
+	html := "<&>"
+	g := new(JSON)
+	g.Set(html)
+	if p, _ := g.MarshalJSON(); string(p) != `"<&>"` {
+		t.Fatalf("escape html: %s", p)
+	}
+
+	g = new(JSON)
+	g.ObjectIndex("a").Set(html)
+	if p, _ := g.MarshalJSON(); string(p) != `{"a":"<&>"}` {
+		t.Fatalf("escape html: %s", p)
+	}
+
+	g = new(JSON)
+	g.ArrayIndex(0).Set(html)
+	if p, _ := g.MarshalJSON(); string(p) != `["<&>"]` {
+		t.Fatalf("escape html: %s", p)
+	}
+}

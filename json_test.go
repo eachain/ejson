@@ -85,6 +85,50 @@ func TestObjectIndex(t *testing.T) {
 	}
 }
 
+func TestStrJSON(t *testing.T) {
+	if a := FromString(`"[{\"a\":\"123\"}]"`).StrJSON().ArrayIndex(0).ObjectIndex("a").StrJSON().Int(); a != 123 {
+		t.Fatalf("object.a should be 123 but %v", a)
+	}
+
+	g := new(JSON)
+	g.StrJSON().ObjectIndex("a").ArrayIndex(0).ObjectIndex("b").ArrayIndex(0).ObjectIndex("c").ArrayIndex(0).StrJSON().Set(123)
+	if p, _ := g.MarshalJSON(); string(p) != `"{\"a\":[{\"b\":[{\"c\":[\"123\"]}]}]}"` {
+		t.Fatalf("set: %s", p)
+	}
+
+	g = FromString(`"[{\"a\":\"123\"}]"`)
+	g.Get("[0].a").Set(456)
+	if p, _ := g.MarshalJSON(); string(p) != `"[{\"a\":456}]"` {
+		t.Fatalf("set: %s", p)
+	}
+	g.Get("[0].a").StrJSON().Set(789)
+	if p, _ := g.MarshalJSON(); string(p) != `"[{\"a\":\"789\"}]"` {
+		t.Fatalf("set: %s", p)
+	}
+
+	g = FromString(`"[{\"a\":\"123\", \"b\":\"456\"}]"`)
+	g.Get("[0].b").Remove()
+	if p, _ := g.MarshalJSON(); string(p) != `"[{\"a\":\"123\"}]"` {
+		t.Fatalf("set: %s", p)
+	}
+
+	g = FromString(`"[{\"a\":\"123\", \"b\":\"456\"}]"`)
+	g.Get("[0].b").StrJSON().Remove()
+	if p, _ := g.MarshalJSON(); string(p) != `"[{\"a\":\"123\",\"b\":\"null\"}]"` {
+		t.Fatalf("set: %s", p)
+	}
+
+	g = FromString(`"[{\"a\":\"123\", \"b\":\"456\"}]"`)
+	g.Get("[0].b.x").Set(789)
+	if p, _ := g.MarshalJSON(); string(p) != `"[{\"a\":\"123\",\"b\":\"{\\\"x\\\":789}\"}]"` {
+		t.Fatalf("set: %s", p)
+	}
+	g.Get("[0].b").Set(true)
+	if p, _ := g.MarshalJSON(); string(p) != `"[{\"a\":\"123\",\"b\":true}]"` {
+		t.Fatalf("set: %s", p)
+	}
+}
+
 func TestRemove(t *testing.T) {
 	{
 		g := FromString(`123`)

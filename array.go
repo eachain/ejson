@@ -46,7 +46,7 @@ func (a *array) MarshalJSON() ([]byte, error) {
 			return nil, err
 		}
 	}
-	return json.Marshal(raws)
+	return marshal(raws)
 }
 
 func (a *array) Len() int {
@@ -97,10 +97,6 @@ func (a *array) Index(i int) *JSON {
 				a.values = values
 			}
 			a.values[i] = g
-		}
-
-		for p := a.parent; p != nil; p = p.parent {
-			p.raw = nil
 		}
 	})
 

@@ -10,6 +10,7 @@ type JSON struct {
 	raw    json.RawMessage
 	object *object
 	array  *array
+	str    *strjson
 	parent *JSON
 	update updateFuncs
 }
@@ -71,6 +72,8 @@ func (g *JSON) ArrayIndex(i int) *JSON {
 				g.array = a
 				g.object.unmount()
 				g.object = nil
+				g.str.unmount()
+				g.str = nil
 			}
 		})
 	}
@@ -90,10 +93,33 @@ func (g *JSON) ObjectIndex(key string) *JSON {
 				g.object = obj
 				g.array.unmount()
 				g.array = nil
+				g.str.unmount()
+				g.str = nil
 			}
 		})
 	}
 	return obj.Index(key)
+}
+
+// StrJSON返回字符串的值。如果不存在，返回*JSON不为空。
+// 当返回的*JSON被写入数据后，返回的*JSON将写入当前字符串。
+func (g *JSON) StrJSON() *JSON {
+	g.asStr()
+	str := g.str
+	if str == nil {
+		str = &strjson{parent: g}
+		str.update = g.update.append(func() {
+			if g.str != str {
+				g.str.unmount()
+				g.str = str
+				g.object.unmount()
+				g.object = nil
+				g.array.unmount()
+				g.array = nil
+			}
+		})
+	}
+	return str.Elem()
 }
 
 // Remove将当前*JSON从json树中移除
@@ -106,6 +132,9 @@ func (g *JSON) Remove() {
 	}
 	if g.parent.array != nil {
 		g.parent.array.Remove(g)
+	}
+	if g.parent.str != nil {
+		g.parent.str.Remove(g)
 	}
 
 	for p := g.parent; p != nil; p = p.parent {
@@ -164,6 +193,8 @@ func (g *JSON) getRaw() []byte {
 			g.raw, _ = g.array.MarshalJSON()
 		} else if g.object != nil {
 			g.raw, _ = g.object.MarshalJSON()
+		} else if g.str != nil {
+			g.raw, _ = g.str.MarshalJSON()
 		}
 	}
 
@@ -172,7 +203,7 @@ func (g *JSON) getRaw() []byte {
 
 // Set设置当前*JSON值。
 func (g *JSON) Set(v any) error {
-	raw, err := json.Marshal(v)
+	raw, err := marshal(v)
 	if err != nil {
 		return err
 	}
@@ -194,6 +225,10 @@ func (g *JSON) reset(raw json.RawMessage) {
 	if g.array != nil {
 		g.array.unmount()
 		g.array = nil
+	}
+	if g.str != nil {
+		g.str.unmount()
+		g.str = nil
 	}
 
 	for p := g.parent; p != nil; p = p.parent {

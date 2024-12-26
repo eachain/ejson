@@ -76,6 +76,7 @@ func (g *JSON) asObject() bool {
 func (obj *object) MarshalJSON() ([]byte, error) {
 	buf := &bytes.Buffer{}
 	enc := json.NewEncoder(buf)
+	enc.SetEscapeHTML(false)
 	buf.WriteByte('{')
 	for i, key := range obj.keys {
 		if i > 0 {
@@ -150,10 +151,6 @@ func (obj *object) Index(key string) *JSON {
 			obj.keys = append(obj.keys, key)
 		}
 		obj.entry[key] = g
-
-		for p := obj.parent; p != nil; p = p.parent {
-			p.raw = nil
-		}
 	})
 
 	return g
